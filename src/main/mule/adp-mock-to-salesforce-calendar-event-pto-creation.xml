@@ -50,5 +50,6 @@ output application/json
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="62995ddf-62b3-4d0b-b86d-d381304ccfa7" message='#["For Github"]'/>
 	</flow>
 </mule>
