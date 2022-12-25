@@ -1,0 +1,30 @@
+{
+  "events": [
+    {
+      "data": {
+        "eventContext": {
+          "associateOID": "0055e000003fs4IAAQ",
+          "workAssignmentID": "85826601N"
+        },
+        "transform": {
+          "effectiveDateTime": "2022-06-27",
+          "workerLeave": {
+            "leaveAbsence": {
+              "startDateTime": "2022-07-04",
+              "expectedEndDateTime": "2022-07-15",
+              "leaveTypeCode": {
+                "codeValue": "PTO - Matt Dengler (via ADP)"
+              },
+              "paymentStatusCode": {
+                "codeValue": "yes"
+              },
+              "comment": {
+                "textValue": "Will be on PTO for 2 weeks in Aruba! Don't call me :D"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

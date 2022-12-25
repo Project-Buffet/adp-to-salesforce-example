@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d3891f79-a46a-4e4e-b302-a31a9d3f3738" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="5f6586c5-c8e6-4295-95cc-dfc30a7a0c00" >
+		<salesforce:basic-connection username="${sfdc.username}" password="${sfdc.password}" securityToken="${sfdc.securityToken}" />
+	</salesforce:sfdc-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="94efc89b-7285-4daa-a536-7b3ee4471f31" file="credentials/mdengler-credentials-file.properties"/>
+	<flow name="adp-mock-to-salesforce-calendar-event-pto-creationFlow" doc:id="8d4b0f76-e488-49e4-8437-2bc71b832aed" >
+		<http:listener doc:name="Listener" doc:id="a9ecfd64-aaf0-4c3a-97e5-6bd1b7364bbc" path="/getLeaveDataFromADP" config-ref="HTTP_Listener_config"/>
+		<http:request method="GET" doc:name='Get Leave Data from "ADP" API' doc:id="85c88dbd-8f15-47fa-b62c-9e537b5019ee" url="http://api.mocki.io/v2/358f2785/leaveData" sendBodyMode="ALWAYS"/>
+		<ee:transform doc:name="Convert ADP Message to Saleforce Fields" doc:id="05db0b10-7155-4d12-9c5a-dbfc99ba2025" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[output application/java
+---
+payload.events map ( event , indexOfEvent ) -> {
+	Subject: event.data.transform.workerLeave.leaveAbsence.leaveTypeCode.codeValue,
+	IsAllDayEvent: true,
+	StartDateTime: event.data.transform.workerLeave.leaveAbsence.startDateTime as Date {
+		format:"yyyy-MM-dd"
+	} as String {
+		format: "yyyy-MM-dd'T'00:00:00"
+	} as DateTime,
+	EndDateTime: event.data.transform.workerLeave.leaveAbsence.expectedEndDateTime as Date {
+		format:"yyyy-MM-dd"
+	} as String {
+		format: "yyyy-MM-dd'T'00:00:00"
+	} as DateTime,
+	Description: event.data.transform.workerLeave.leaveAbsence.comment.textValue,
+	OwnerId: event.data.eventContext.associateOID
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert doc:name="Insert / Update Event in Salesforce" doc:id="c92f3cbe-abad-420a-aa31-de15866f080d" config-ref="Salesforce_Config" objectType="Event" externalIdFieldName="Id"/>
+		<ee:transform doc:name="Success / Failure" doc:id="1652eb9b-53af-4dbf-b3a5-dc022d554ae2">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Event Created": payload.items.payload.created[0],
+	"EventId": payload.items.id[0]
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
